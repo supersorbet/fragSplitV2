@@ -99,20 +99,14 @@ contract FragGrenadeUtils is ReentrancyGuard {
         address[] memory routers,
         uint256[] memory amounts,
         uint256[] memory sizes,
-        uint256[] memory deadlines,
-        uint8[] memory vs,
-        bytes32[] memory rs,
-        bytes32[] memory ss
+        uint256[] memory deadlines
     ) external nonReentrant {
         require(
             token0s.length == token1s.length &&
             token0s.length == routers.length &&
             token0s.length == amounts.length &&
             token0s.length == sizes.length &&
-            token0s.length == deadlines.length &&
-            token0s.length == vs.length &&
-            token0s.length == rs.length &&
-            token0s.length == ss.length,
+            token0s.length == deadlines.length,
             "Mismatched input arrays"
         );
 
