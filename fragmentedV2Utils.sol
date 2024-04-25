@@ -115,10 +115,7 @@ contract FragGrenadeUtils is ReentrancyGuard {
                 msg.sender,
                 address(this),
                 amounts[i],
-                deadlines[i],
-                vs[i],
-                rs[i],
-                ss[i]
+                deadlines[i]
             );
 
             IERC20(token0s[i]).transferFrom(msg.sender, address(this), amounts[i]);
