@@ -8,12 +8,15 @@ import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft
 import {IUniswapV2Router02} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import {ReentrancyGuard} from "solady/src/utils/ReentrancyGuard.sol";
 
-contract FragGrenadeUtils is ReentrancyGuard {
+contract FragUtils is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     event Swapped(uint256 indexed tokenId, address indexed token);
     event SwappedWithPermit(uint256 indexed tokenId, address indexed token);
-    event SwappedWithPermitAndTransferFee(uint256 indexed tokenId, address indexed token);
+    event SwappedWithPermitAndTransferFee(
+        uint256 indexed tokenId,
+        address indexed token
+    );
 
     /**
      * @dev Execute a batch of fragmented swaps with permit functionality.
@@ -40,17 +43,17 @@ contract FragGrenadeUtils is ReentrancyGuard {
     ) external nonReentrant {
         require(
             token0s.length == token1s.length &&
-            token0s.length == routers.length &&
-            token0s.length == amounts.length &&
-            token0s.length == sizes.length &&
-            token0s.length == deadlines.length &&
-            token0s.length == vs.length &&
-            token0s.length == rs.length &&
-            token0s.length == ss.length,
+                token0s.length == routers.length &&
+                token0s.length == amounts.length &&
+                token0s.length == sizes.length &&
+                token0s.length == deadlines.length &&
+                token0s.length == vs.length &&
+                token0s.length == rs.length &&
+                token0s.length == ss.length,
             "Mismatched input arrays"
         );
 
-        for (uint i = 0; i < token0s.length; i++) {
+        for (uint256 i = 0; i < token0s.length; i++) {
             IERC20Permit(token0s[i]).permit(
                 msg.sender,
                 address(this),
@@ -61,64 +64,11 @@ contract FragGrenadeUtils is ReentrancyGuard {
                 ss[i]
             );
 
-            IERC20(token0s[i]).transferFrom(msg.sender, address(this), amounts[i]);
-            IERC20(token0s[i]).approve(routers[i], amounts[i]);
-
-            address[] memory path = new address[](2);
-            path[0] = token0s[i];
-            path[1] = token1s[i];
-
-            uint256 amountRemaining = amounts[i];
-            while (amountRemaining > 0) {
-                uint256 amountIn = amountRemaining < sizes[i] ? amountRemaining : sizes[i];
-                IUniswapV2Router02(routers[i]).swapExactTokensForTokens(
-                    amountIn,
-                    0,  //0 for minimal output, replace w/ real min output if needed
-                    path,
-                    msg.sender,
-                    block.timestamp + 666//adjust as necessary
-                );
-
-                amountRemaining -= amountIn;
-            }
-        }
-    }
-
-    /**
-     * @dev Execute a batch of fragmented swaps.
-     * @param token0s Array of addresses of the tokens to swap from
-     * @param token1s Array of addresses of the tokens to swap to
-     * @param routers Array of addresses of the Uniswap V2 Routers
-     * @param amounts Array of total amounts of token0s to swap
-     * @param sizes Array of sizes for each individual swap
-     * @param deadlines Array of deadlines
-     */
-    function batchSplitSwap(
-        address[] memory token0s,
-        address[] memory token1s,
-        address[] memory routers,
-        uint256[] memory amounts,
-        uint256[] memory sizes,
-        uint256[] memory deadlines
-    ) external nonReentrant {
-        require(
-            token0s.length == token1s.length &&
-            token0s.length == routers.length &&
-            token0s.length == amounts.length &&
-            token0s.length == sizes.length &&
-            token0s.length == deadlines.length,
-            "Mismatched input arrays"
-        );
-
-        for (uint i = 0; i < token0s.length; i++) {
-            IERC20Permit(token0s[i]).permit(
+            IERC20(token0s[i]).transferFrom(
                 msg.sender,
                 address(this),
-                amounts[i],
-                deadlines[i]
+                amounts[i]
             );
-
-            IERC20(token0s[i]).transferFrom(msg.sender, address(this), amounts[i]);
             IERC20(token0s[i]).approve(routers[i], amounts[i]);
 
             address[] memory path = new address[](2);
@@ -127,32 +77,33 @@ contract FragGrenadeUtils is ReentrancyGuard {
 
             uint256 amountRemaining = amounts[i];
             while (amountRemaining > 0) {
-                uint256 amountIn = amountRemaining < sizes[i] ? amountRemaining : sizes[i];
+                uint256 amountIn = amountRemaining < sizes[i]
+                    ? amountRemaining
+                    : sizes[i];
                 IUniswapV2Router02(routers[i]).swapExactTokensForTokens(
                     amountIn,
-                    0,  //0 for minimal output, replace w/ real min output if needed
+                    0, //0 for minimal output, replace w/ real min output if needed
                     path,
                     msg.sender,
-                    block.timestamp + 666//adjust as necessary
+                    block.timestamp + 666 //adjust as necessary
                 );
 
                 amountRemaining -= amountIn;
             }
         }
     }
-
 
     /**
      * @dev Execute fragmented swap with permit functionality.
-     * @param token0 The address of the token to swap from
-     * @param token1 The address of the token to swap to
-     * @param router The address of the Uniswap V2 Router
-     * @param amount The total amount of token0 to swap
-     * @param size The size of each individual swap
-     * @param deadline The deadline for the permit signature
-     * @param v The signature parameter v from the permit signature
-     * @param r The signature parameter r from the permit signature
-     * @param s The signature parameter s from the permit signature
+     * @param token0 The address of the token to swap from.
+     * @param token1 The address of the token to swap to.
+     * @param router The address of the Uniswap V2 Router.
+     * @param amount The total amount of token0 to swap.
+     * @param size The size of each individual swap.
+     * @param deadline The deadline for the permit signature.
+     * @param v The signature parameter v from the permit signature.
+     * @param r The signature parameter r from the permit signature.
+     * @param s The signature parameter s from the permit signature.
      */
 
     //wow, so nice to write up with robots !!!
@@ -180,57 +131,6 @@ contract FragGrenadeUtils is ReentrancyGuard {
             v,
             r,
             s
-        );
-
-        IERC20(token0).transferFrom(msg.sender, address(this), amount);
-        IERC20(token0).approve(router, amount);
-
-        address[] memory paths = new address[](2);
-        paths[0] = token0;
-        paths[1] = token1;
-
-        while (amount > 0) {
-            uint256 amountIn = amount < size ? amount : size;
-
-            IUniswapV2Router02(router).swapExactTokensForTokens(
-                amountIn,
-                0,
-                paths,
-                msg.sender,
-                block.timestamp + 666
-            );
-
-            amount -= amountIn;
-        }
-    }
-
-    /**
-     * @dev Execute fragmented swap.
-     * @param token0 The address of the token to swap from
-     * @param token1 The address of the token to swap to
-     * @param router The address of the Uniswap V2 Router
-     * @param amount The total amount of token0 to swap
-     * @param size The size of each individual swap
-     * @param deadline The deadline for the permit signature
-     */
-
-    function splitSwap(
-        address token0,
-        address token1,
-        address router,
-        uint256 amount,
-        uint256 size,
-        uint256 deadline
-    ) external nonReentrant {
-        require(amount > 0, "fragUtils: AMOUNT_IS_ZERO");
-        require(size > 0, "fragUtils: SIZE_IS_ZERO");
-        require(size <= amount, "fragUtils: SIZE_IS_MORE_THAN_AMOUNT");
-
-        IERC20Permit(token0).permit(
-            msg.sender,
-            address(this),
-            amount,
-            deadline
         );
 
         IERC20(token0).transferFrom(msg.sender, address(this), amount);
@@ -321,61 +221,6 @@ contract FragGrenadeUtils is ReentrancyGuard {
     }
 
     /**
-     * @dev Swaps the specified amount of token0 for token1 using the Uniswap V2 Router,
-     * while supporting transfer fees.
-     *
-     * @param token0 The address of the token to swap from
-     * @param token1 The address of the token to swap to
-     * @param router The address of the Uniswap V2 Router
-     * @param amount The total amount of token0 to swap
-     * @param size The size of each individual swap
-     * @param deadline The deadline for the permit signature
-     */
-    function splitSwapSupportingTransferFee(
-        address token0,
-        address token1,
-        address router,
-        uint256 amount,
-        uint256 size,
-        uint256 deadline
-    ) external nonReentrant {
-        IERC20Permit(token0).permit(
-            msg.sender,
-            address(this),
-            amount,
-            deadline
-        );
-        IERC20(token0).transferFrom(msg.sender, address(this), amount);
-
-        amount = IERC20(token0).balanceOf(address(this));
-
-        require(amount > 0, "fragUtils: AMOUNT_IS_ZERO");
-        require(size > 0, "fragUtils: SIZE_IS_ZERO");
-        require(size <= amount, "fragUtils: SIZE_IS_MORE_THAN_AMOUNT");
-
-        IERC20(token0).approve(router, amount);
-
-        address[] memory paths = new address[](2);
-        paths[0] = token0;
-        paths[1] = token1;
-
-        while (amount > 0) {
-            uint256 amountIn = amount < size ? amount : size;
-
-            IUniswapV2Router02(router)
-                .swapExactTokensForTokensSupportingFeeOnTransferTokens(
-                    amountIn,
-                    0,
-                    paths,
-                    msg.sender,
-                    block.timestamp + 666
-                );
-
-            amount -= amountIn;
-        }
-    }
-
-    /**
      * @dev Internal function to execute the fragmented swap logic
      * @param token0 The address of the token to swap from
      * @param token1 The address of the token to swap to
@@ -416,9 +261,22 @@ contract FragGrenadeUtils is ReentrancyGuard {
         }
     }
 
-    // swap token0 to token1 by router,
-    // the amount of each swap is equal to the size,
-    // the amount of the last swap may be less than the size
+    /**
+ * @dev Swaps the specified amount of token0 for token1 using the Uniswap V2 Router,
+ * while supporting transfer fees.
+ * The function requires the user to transfer the specified amount of token0 to the contract before executing the swap.
+ *
+ * @param token0 The address of the token to swap from
+ * @param token1 The address of the token to swap to
+ * @param router The address of the Uniswap V2 Router
+ * @param amount The total amount of token0 to swap
+ * @param size The size of each individual swap
+ *
+
+ * The swap transactions are executed using the Uniswap V2 Router with support for transfer fees
+ * on tokens being swapped. The swap transactions are performed in chunks of size 'size',
+ * with the possibility of the last swap having a smaller amount if the remaining amount is less than 'size'.
+ */
     function splitOrderSwap(
         address token0,
         address token1,
@@ -659,4 +517,3 @@ contract FragGrenadeUtils is ReentrancyGuard {
         return totalAmountOut;
     }
 }
-
